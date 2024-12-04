@@ -1,0 +1,34 @@
+CREATE TABLE hardware (
+    id BIGINT(20) NOT NULL PRIMARY KEY, -- 硬件编号
+    name VARCHAR(50) NOT NULL,          -- 硬件名称
+    type VARCHAR(50) NOT NULL,                   -- 硬件类型（如CPU、GPU等）
+    brand VARCHAR(50) NOT NULL,                  -- 品牌
+    model VARCHAR(50) NOT NULL,                  -- 型号
+    specifications JSON NOT NULL,                -- 规格参数（JSON格式）
+    release_date DATE NOT NULL,                  -- 发布日期
+    price FLOAT NOT NULL,                        -- 价格
+    description VARCHAR(5000)                    -- 概述
+);
+
+
+CREATE TABLE article (
+    id BIGINT(20) NOT NULL PRIMARY KEY,
+    article_id VARCHAR(50) NOT NULL,
+    title VARCHAR(50) NOT NULL,                 -- 标题
+    content TEXT NOT NULL,                      -- 文章内容
+    category VARCHAR(50) NOT NULL,              -- 分类（如GPU知识）
+    publish_date DATE NOT NULL,                 -- 发布日期
+    author VARCHAR(50) NOT NULL                 -- 作者
+);
+
+
+CREATE TABLE download (
+    id BIGINT(20) NOT NULL PRIMARY KEY,     -- 下载资源编号
+    download_id VARCHAR(50) NOT NULL,
+    name VARCHAR(50) NOT NULL,                   -- 资源名称
+    description VARCHAR(5000),                   -- 简述
+    url VARCHAR(500) NOT NULL,                   -- 下载链接
+    category VARCHAR(50) NOT NULL,               -- 分类（如驱动、工具箱）
+    version VARCHAR(50) NOT NULL,                -- 版本号
+    release_date DATE NOT NULL                   -- 发布日期
+);
