@@ -1,5 +1,5 @@
 CREATE TABLE hardware (
-    id BIGINT(20) NOT NULL PRIMARY KEY, -- 硬件编号
+    id BIGINT NOT NULL PRIMARY KEY, -- 硬件编号
     name VARCHAR(50) NOT NULL,          -- 硬件名称
     type VARCHAR(50) NOT NULL,                   -- 硬件类型（如CPU、GPU等）
     brand VARCHAR(50) NOT NULL,                  -- 品牌
@@ -12,7 +12,7 @@ CREATE TABLE hardware (
 
 
 CREATE TABLE article (
-    id BIGINT(20) NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL PRIMARY KEY,
     article_id VARCHAR(50) NOT NULL,
     title VARCHAR(50) NOT NULL,                 -- 标题
     content TEXT NOT NULL,                      -- 文章内容
@@ -23,7 +23,7 @@ CREATE TABLE article (
 
 
 CREATE TABLE download (
-    id BIGINT(20) NOT NULL PRIMARY KEY,     -- 下载资源编号
+    id BIGINT NOT NULL PRIMARY KEY,     -- 下载资源编号
     download_id VARCHAR(50) NOT NULL,
     name VARCHAR(50) NOT NULL,                   -- 资源名称
     description VARCHAR(5000),                   -- 简述
@@ -31,4 +31,10 @@ CREATE TABLE download (
     category VARCHAR(50) NOT NULL,               -- 分类（如驱动、工具箱）
     version VARCHAR(50) NOT NULL,                -- 版本号
     release_date DATE NOT NULL                   -- 发布日期
+);
+
+CREATE TABLE user (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL
 );

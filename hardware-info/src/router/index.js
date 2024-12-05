@@ -4,12 +4,18 @@ import ArticlePage from '../views/ArticlePage.vue';
 import DownloadPage from '../views/DownloadPage.vue';
 import HomePage from '../views/HomePage.vue';
 import LoginPage from '../views/LoginPage.vue';
+import RegisterPage from '../views/RegisterPage.vue'; // 导入注册页面
 
 const routes = [
   {
     path: '/',
-    name: 'Login',
-    component: LoginPage,
+    name: 'Login',  // 登录页面
+    component: LoginPage,  // 使用 LoginPage 组件
+  },
+  {
+    path: '/register',
+    name: 'Register', // 注册页面
+    component: RegisterPage, // 使用 RegisterPage 组件
   },
   {
     path: '/home',
@@ -40,15 +46,17 @@ const router = createRouter({
   routes,
 });
 
-// 路由守卫：检查是否已认证
+// 路由守卫
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('token'); // 从 localStorage 获取 token 判断是否已登录
+  const isAuthenticated = localStorage.getItem('token');
+  console.log('Route Guard:', to.name, isAuthenticated);
 
   if (to.path.startsWith('/home') && !isAuthenticated) {
-    // 如果用户尝试访问需要登录的页面且未认证，则重定向到登录页面
     next({ name: 'Login', query: { redirect: to.fullPath } });
+  } else if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
+    next({ name: 'Home' });
   } else {
-    next(); // 如果已经认证或访问其他页面，允许访问
+    next();
   }
 });
 
