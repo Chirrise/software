@@ -38,3 +38,7 @@ CREATE TABLE user (
     username VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL
 );
+
+ALTER TABLE User ADD COLUMN role VARCHAR(10) NOT NULL DEFAULT 'USER';
+INSERT INTO User (username, password, role) VALUES ('admin', '123123', 'ADMIN');
+
