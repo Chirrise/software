@@ -1,51 +1,103 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.User;
-import com.example.demo.service.UserService;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.util.JwtUtil;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
-    // 登录方法
+    /**
+     * 用户登录接口，返回 JWT Token
+     */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user) {
-        // 认证用户
-        User authenticatedUser = userService.authenticateUser(user.getUsername(), user.getPassword());
-        if (authenticatedUser != null) {
-            authenticatedUser.setToken(JwtUtil.createToken(authenticatedUser.getUsername(), authenticatedUser.getRole()));
-            return ResponseEntity.ok(authenticatedUser);
+    public ResponseEntity<User> login(@RequestBody User loginRequest) {
+        // 从数据库查询用户
+        Optional<User> optionalUser = userRepository.findByUsername(loginRequest.getUsername());
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.status(401).body(null); // 用户名不存在
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("用户名或密码错误");
+        User user = optionalUser.get();
+        // 验证密码
+        if (!user.getPassword().equals(loginRequest.getPassword())) {
+            return ResponseEntity.status(401).body(null); // 密码错误
+        }
+
+        // 生成 Token 并设置到 User 对象中
+        String token = JwtUtil.createToken(user);
+        user.setToken(token); // 设置 token
+
+        // 返回用户信息（不包含密码）
+        user.setPassword(null);
+        return ResponseEntity.ok(user); // 返回包含 token 的用户对象
     }
 
-    // 注册方法
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        // 防止注册时用户名为 admin
-        if ("admin".equals(user.getUsername())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("用户名不能为 admin");
+    /**
+     * 普通用户访问页面
+     */
+    @GetMapping("/view")
+    public ResponseEntity<String> viewPage(HttpServletRequest request) {
+        String token = extractToken(request);
+        if (JwtUtil.hasRole(token, "USER") || JwtUtil.hasRole(token, "ADMIN")) {
+            return ResponseEntity.ok("欢迎访问用户页面！");
         }
+        return ResponseEntity.status(403).body("权限不足");
+    }
 
-        // 检查用户名是否已存在
-        if (userService.isUsernameTaken(user.getUsername())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("用户名已存在");
+    /**
+     * 管理员管理页面：删除用户
+     */
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id, HttpServletRequest request) {
+        String token = extractToken(request);
+        if (JwtUtil.hasRole(token, "ADMIN")) {
+            Optional<User> userToDelete = userRepository.findById(id);
+            if (userToDelete.isPresent()) {
+                userRepository.deleteById(id);
+                return ResponseEntity.ok("用户已删除，ID：" + id);
+            } else {
+                return ResponseEntity.status(404).body("用户未找到，ID：" + id);
+            }
         }
+        return ResponseEntity.status(403).body("仅管理员可执行此操作");
+    }
 
-        // 默认用户角色为 USER
-        user.setRole("USER");
-        // 保存新用户
-        userService.saveUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body("用户注册成功");
+    /**
+     * 管理员管理页面：添加用户
+     */
+    @PostMapping("/add")
+    public ResponseEntity<String> addUser(@RequestBody User newUser, HttpServletRequest request) {
+        String token = extractToken(request);
+        if (JwtUtil.hasRole(token, "ADMIN")) {
+            // 检查用户名是否已存在
+            if (userRepository.findByUsername(newUser.getUsername()).isPresent()) {
+                return ResponseEntity.status(400).body("用户名已存在");
+            }
+            userRepository.save(newUser);
+            return ResponseEntity.ok("用户已添加：" + newUser.getUsername());
+        }
+        return ResponseEntity.status(403).body("仅管理员可执行此操作");
+    }
+
+    /**
+     * 提取请求头中的 JWT Token
+     */
+    private String extractToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7); // 去掉 "Bearer " 前缀
+        }
+        throw new IllegalArgumentException("Token 不存在或格式错误");
     }
 }

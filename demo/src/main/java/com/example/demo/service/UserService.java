@@ -2,11 +2,11 @@ package com.example.demo.service;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -14,33 +14,52 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // 检查并初始化管理员账号
-    @PostConstruct
-    public void initAdminUser() {
-        // 检查是否已经存在用户名为 admin 的用户
-        if (userRepository.findByUsername("admin") == null) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setPassword("123123"); // 默认密码，最好能加密存储
-            admin.setRole("ADMIN");
-            userRepository.save(admin);
+    /**
+     * 验证用户登录，并生成 JWT Token
+     * @param username 用户名
+     * @param password 密码
+     * @return 包含 Token 的用户对象，或者 null（登录失败）
+     */
+    public User authenticateUser(String username, String password) {
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
+                // 登录成功，生成 Token
+                String token = JwtUtil.createToken(user);
+                user.setToken(token); // 设置 Token
+                return user;
+            }
         }
+
+        return null; // 登录失败
     }
 
-    public boolean isUsernameTaken(String username) {
-        return userRepository.findByUsername(username) != null;
-    }
-
+    /**
+     * 保存新用户
+     * @param user 用户对象
+     */
     public void saveUser(User user) {
         userRepository.save(user);
     }
 
-    public User authenticateUser(String username, String password) {
-        User user = userRepository.findByUsername(username);
-        if (user != null && user.getPassword().equals(password)) {
-            return user;
-        }
-        return null;
+    /**
+     * 检查用户名是否已被占用
+     * @param username 用户名
+     * @return true 如果用户名已存在，否则 false
+     */
+    public boolean isUsernameTaken(String username) {
+        return userRepository.findByUsername(username).isPresent();
     }
 
+    /**
+     * 验证用户是否具有指定角色
+     * @param token JWT Token
+     * @param role 目标角色
+     * @return true 如果用户角色匹配，否则 false
+     */
+    public boolean hasRole(String token, String role) {
+        return JwtUtil.hasRole(token, role);
+    }
 }
